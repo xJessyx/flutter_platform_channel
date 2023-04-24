@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,47 +11,50 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      home: MyWidget(title: 'test'),
+      home: MyFlutterApp(title: 'test'),
     );
   }
 }
 
-class MyWidget extends StatefulWidget {
-  const MyWidget({super.key, required String title});
+const platform = MethodChannel('com.example.myapp/message');
+
+class MyFlutterApp extends StatefulWidget {
+  const MyFlutterApp({super.key, required String title});
 
   @override
   // ignore: library_private_types_in_public_api
-  _MyWidgetState createState() => _MyWidgetState();
+  _MyFlutterAppState createState() => _MyFlutterAppState();
 }
 
-class _MyWidgetState extends State<MyWidget> {
-  final platform = const MethodChannel('com.example.myApp/myChannel');
-  String _message = '';
+class _MyFlutterAppState extends State<MyFlutterApp> {
+  String message = '';
 
   @override
   void initState() {
     super.initState();
-    platform.setMethodCallHandler((MethodCall call) async {
-      if (call.method == "sendMessageFromAndroid") {
-        String message = call.arguments;
-        if (kDebugMode) {
-          print('get android message = $message');
-        }
-        setState(() {
-          _message = message;
-        });
-      }
-    });
+    initPlatformState();
+  }
+
+  Future<void> initPlatformState() async {
+    try {
+      final String result = await platform.invokeMethod('getMessage');
+      setState(() {
+        message = result;
+      });
+    } on PlatformException catch (e) {
+      setState(() {
+        message = "Failed to get message: '${e.message}'.";
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My App'),
-      ),
-      body: Center(
-        child: Text('message:$_message'),
+    return MaterialApp(
+      home: Scaffold(
+        body: Center(
+          child: Text("message = $message"),
+        ),
       ),
     );
   }
